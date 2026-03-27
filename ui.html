@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML to Figma</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .header {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 13px; flex-shrink: 0;
+  }
+
+  .title   { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+  .subtitle{ font-size: 11px; color: #888; margin-top: 1px; }
+
+  .container {
+    flex: 1; overflow-y: auto;
+    padding: 14px 16px 76px;
+  }
+
+  .tabs {
+    display: flex; gap: 6px;
+    background: white; padding: 5px; border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 14px;
+  }
+
+  .tab {
+    flex: 1; padding: 9px; border: none;
+    background: transparent; border-radius: 7px;
+    font-size: 12px; font-weight: 500; color: #666;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .tab:hover { background: #f5f5f5; color: #1a1a1a; }
+  .tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white; box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .card {
+    background: white; border-radius: 10px;
+    padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .file-upload {
+    position: relative; border: 2px dashed #d0d0d0;
+    border-radius: 10px; padding: 36px 16px;
+    text-align: center; transition: all 0.2s; cursor: pointer; background: #fafafa;
+  }
+  .file-upload:hover, .file-upload.dragover {
+    border-color: #667eea; background: #f5f7ff;
+  }
+  .upload-icon {
+    width: 44px; height: 44px; margin: 0 auto 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 11px; display: flex; align-items: center;
+    justify-content: center; font-size: 22px;
+  }
+  .upload-text { font-size: 13px; font-weight: 500; color: #1a1a1a; margin-bottom: 3px; }
+  .upload-hint { font-size: 11px; color: #aaa; }
+  input[type=file] {
+    position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;
+  }
+
+  textarea {
+    width: 100%; height: 200px;
+    border: 2px solid #e0e0e0; border-radius: 10px;
+    padding: 10px; font-size: 11.5px;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    resize: none; transition: all 0.2s;
+    background: #fafafa; color: #1a1a1a; line-height: 1.5;
+  }
+  textarea:focus {
+    outline: none; border-color: #667eea; background: white;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+  }
+  textarea::placeholder { color: #bbb; }
+
+  .tip {
+    background: #f0f9ff; border: 1px solid #bae6fd;
+    border-radius: 8px; padding: 9px 11px;
+    font-size: 11px; color: #0369a1; margin-top: 10px;
+    display: flex; gap: 7px; align-items: flex-start;
+  }
+
+  .features {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;
+  }
+  .feature { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #555; }
+  .feature-icon {
+    width: 15px; height: 15px; background: #10b981;
+    border-radius: 4px; display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 9px; flex-shrink: 0;
+  }
+
+  .footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; padding: 10px 16px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+
+  .btn-primary {
+    width: 100%; padding: 11px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(102,126,234,0.4); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .status-bar {
+    background: #f5f5f5; border-radius: 8px; padding: 8px 11px;
+    margin-bottom: 7px; display: none;
+    align-items: center; gap: 9px; font-size: 12px;
+  }
+  .status-bar.show { display: flex; }
+  .status-icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;
+  }
+  .status-icon.loading { background: #667eea; color: white; animation: spin 1s linear infinite; }
+  .status-icon.success { background: #10b981; color: white; }
+  .status-icon.error   { background: #ef4444; color: white; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .status-text { flex: 1; color: #1a1a1a; }
+
+  .error-text {
+    color: #ef4444; font-size: 11px; padding: 9px 11px;
+    background: #fef2f2; border-radius: 8px;
+    border-left: 3px solid #ef4444; margin-bottom: 7px;
+  }
+  .section-title {
+    font-size: 12px; font-weight: 600; color: #1a1a1a;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">H</div>
+  <div>
+    <div class="title">HTML to Figma</div>
+    <div class="subtitle">Pixel-perfect layer import</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" data-tab="upload">📁 Upload File</button>
+    <button class="tab"        data-tab="paste" >📝 Paste Code</button>
+  </div>
+
+  <div class="tab-content active" id="upload-content">
+    <div class="card">
+      <div class="file-upload" id="dropZone">
+        <div class="upload-icon">⬆️</div>
+        <div class="upload-text">Drop HTML file here</div>
+        <div class="upload-hint">or click to browse (.html / .htm)</div>
+        <input type="file" id="fileInput" accept=".html,.htm" />
+      </div>
+      <div class="tip">💡 Upload .html or .htm files — inline styles and &lt;style&gt; tags both supported</div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="paste-content">
+    <div class="card">
+      <textarea id="htmlInput" placeholder="<style>
+  .card { background: #0D1F35; border-radius: 12px; }
+  .title { color: white; font-size: 28px; }
+</style>
+<div class='card'>
+  <h1 class='title'>Paste your HTML here…</h1>
+</div>"></textarea>
+      <div class="tip">💡 Paste complete HTML with styles. CSS variables, gradients and SVGs all convert!</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="section-title">✨ What Gets Converted</div>
+    <div class="features">
+      <div class="feature"><span class="feature-icon">✓</span>Backgrounds &amp; gradients</div>
+      <div class="feature"><span class="feature-icon">✓</span>Borders &amp; shadows</div>
+      <div class="feature"><span class="feature-icon">✓</span>Text with styling</div>
+      <div class="feature"><span class="feature-icon">✓</span>SVG elements</div>
+      <div class="feature"><span class="feature-icon">✓</span>Images (embedded)</div>
+      <div class="feature"><span class="feature-icon">✓</span>Border radius</div>
+      <div class="feature"><span class="feature-icon">✓</span>Font properties</div>
+      <div class="feature"><span class="feature-icon">✓</span>Opacity &amp; effects</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div id="statusBar"     class="status-bar">
+    <div class="status-icon" id="statusIcon"></div>
+    <div class="status-text" id="statusText"></div>
+  </div>
+  <div id="errorContainer"></div>
+  <button class="btn-primary" id="convertBtn">🎨 Convert to Figma</button>
+</div>
+
+<script>
+// ─── UI plumbing ──────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fileInput      = $('fileInput');
+const htmlInput      = $('htmlInput');
+const convertBtn     = $('convertBtn');
+const statusBar      = $('statusBar');
+const statusIcon     = $('statusIcon');
+const statusText     = $('statusText');
+const errorContainer = $('errorContainer');
+const dropZone       = $('dropZone');
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const name = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    $(`${name}-content`).classList.add('active');
+  });
+});
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+fileInput.onchange = () => fileInput.files[0] && loadFile(fileInput.files[0]);
+
+function loadFile(file) {
+  const r = new FileReader();
+  r.onload = e => {
+    htmlInput.value = e.target.result;
+    document.querySelector('.tab[data-tab="paste"]').click();
+  };
+  r.readAsText(file);
+}
+
+function showStatus(type, text) {
+  statusBar.className = 'status-bar show';
+  statusIcon.className = `status-icon ${type}`;
+  statusIcon.textContent = type === 'loading' ? '⟳' : type === 'success' ? '✓' : '✕';
+  statusText.textContent = text;
+}
+function showError(msg) {
+  statusBar.classList.remove('show');
+  errorContainer.innerHTML = `<div class="error-text">❌ ${msg}</div>`;
+}
+
+window.onmessage = e => {
+  const msg = e.data.pluginMessage;
+  if (!msg) return;
+  if (msg.type === 'done')  { showStatus('success', `✨ Created ${msg.count} layers!`); convertBtn.disabled = false; }
+  if (msg.type === 'error') { showError(msg.message); convertBtn.disabled = false; }
+};
+
+// ─── Main convert ─────────────────────────────────────────────────────────────
+convertBtn.onclick = async () => {
+  errorContainer.innerHTML = '';
+  statusBar.classList.remove('show');
+  const html = htmlInput.value.trim();
+  if (!html) { showError('Please provide HTML code or upload a file'); return; }
+
+  convertBtn.disabled = true;
+  showStatus('loading', 'Rendering HTML…');
+
+  // Sandboxed iframe at position 0,0 — BoundingClientRect will equal page coords
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = `
+    position: fixed; left: 0; top: 0;
+    width: 1440px; height: 6000px;
+    visibility: hidden; border: none; z-index: -1;
+    pointer-events: none;
+  `;
+  document.body.appendChild(iframe);
+
+  // Inject a comprehensive set of CSS variables so references don't fall back to browser defaults
+  const fullHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    :root {
+      --color-text-primary:#1a1a1a; --color-text-secondary:#666;
+      --color-background-primary:#ffffff; --color-background-secondary:#f5f5f5;
+      --color-border-secondary:#d0d0d0;
+      --border-radius-sm:4px; --border-radius-md:6px; --border-radius-lg:8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; padding: 0; }
+  </style></head><body>${html}</body></html>`;
+
+  const idoc = iframe.contentDocument;
+  idoc.open(); idoc.write(fullHTML); idoc.close();
+
+  // Give layout engine a full two-frame settle
+  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  try {
+    showStatus('loading', 'Capturing elements…');
+    const layers = [];
+    layerOrder = 0;
+    await walkAndCapture(idoc.body, iframe.contentWindow, layers);
+    document.body.removeChild(iframe);
+
+    if (!layers.length) {
+      showError('No visible elements found in HTML');
+      convertBtn.disabled = false;
+      return;
+    }
+
+    // Sort by z-index then DOM order
+    layers.sort((a, b) => {
+      const za = parseInt(a.zIndex) || 0;
+      const zb = parseInt(b.zIndex) || 0;
+      return za !== zb ? za - zb : a.order - b.order;
+    });
+
+    showStatus('loading', `Converting ${layers.length} elements…`);
+    parent.postMessage({ pluginMessage: { type: 'convert', layers } }, '*');
+  } catch (err) {
+    if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    showError(err.message);
+    convertBtn.disabled = false;
+  }
+};
+
+// ─── Image helpers ────────────────────────────────────────────────────────────
+
+/** Rasterise any image src to PNG bytes via canvas. Returns null on failure. */
+async function getImageBytes(src) {
+  if (!src || src.startsWith('data:') === false) {
+    // For http/https attempt a canvas draw (works for same-origin & data URIs)
+    try {
+      const resp = await fetch(src, { mode: 'cors' });
+      const blob = await resp.blob();
+      src = await blobToDataURL(blob);
+    } catch (_) {
+      try {
+        // Last-ditch: load as normal <img> (may be blocked by CORS)
+        const img = await loadImgElement(src);
+        return canvasBytesFromImg(img);
+      } catch (_2) { return null; }
+    }
+  }
+  try {
+    const img = await loadImgElement(src);
+    return canvasBytesFromImg(img);
+  } catch (_) { return null; }
+}
+
+function blobToDataURL(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+function loadImgElement(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+function canvasBytesFromImg(img) {
+  const c = document.createElement('canvas');
+  c.width  = img.naturalWidth  || img.width  || 1;
+  c.height = img.naturalHeight || img.height || 1;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return new Promise((res, rej) => {
+    c.toBlob(blob => {
+      if (!blob) { rej(new Error('canvas toBlob failed')); return; }
+      const r = new FileReader();
+      r.onload = e => res(Array.from(new Uint8Array(e.target.result)));
+      r.onerror = rej;
+      r.readAsArrayBuffer(blob);
+    }, 'image/png');
+  });
+}
+
+// ─── CSS helpers ──────────────────────────────────────────────────────────────
+
+/** Resolve CSS custom properties that getComputedStyle already expands — nothing to do here
+    but keep for clarity. The browser's getComputedStyle returns computed values. */
+function resolveColor(str) {
+  if (!str || str === 'transparent' || str === 'rgba(0, 0, 0, 0)') return null;
+  return str;
+}
+
+// ─── DOM walker ───────────────────────────────────────────────────────────────
+
+let layerOrder = 0;
+
+const SKIP_TAGS = new Set(['script','style','head','meta','link','noscript','title','defs']);
+
+async function walkAndCapture(el, win, layers) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return;
+  const tag = el.tagName.toLowerCase();
+  if (SKIP_TAGS.has(tag)) return;
+
+  const cs   = win.getComputedStyle(el);
+  const rect = el.getBoundingClientRect();
+
+  // Skip invisible
+  if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return;
+  if (rect.width < 0.5 || rect.height < 0.5) return;
+
+  // ── SVG: serialize the whole subtree, skip children ─────────────────────────
+  if (tag === 'svg') {
+    let svgContent = '';
+    try {
+      const serialiser = new XMLSerializer();
+      svgContent = serialiser.serializeToString(el);
+      // Ensure width/height attributes are present
+      if (!svgContent.includes('width=')) {
+        svgContent = svgContent.replace('<svg', `<svg width="${rect.width}" height="${rect.height}"`);
+      }
+    } catch (_) {}
+    layers.push({
+      type: 'SVG',
+      name: el.id ? `svg#${el.id}` : 'svg',
+      svgContent,
+      x: rect.left,   y: rect.top,
+      width: rect.width, height: rect.height,
+      bgColor: cs.backgroundColor,
+      borderTopLeftRadius:     parseFloat(cs.borderTopLeftRadius)     || 0,
+      borderTopRightRadius:    parseFloat(cs.borderTopRightRadius)    || 0,
+      borderBottomLeftRadius:  parseFloat(cs.borderBottomLeftRadius)  || 0,
+      borderBottomRightRadius: parseFloat(cs.borderBottomRightRadius) || 0,
+      opacity: parseFloat(cs.opacity),
+      zIndex: cs.zIndex, order: layerOrder++,
+    });
+    return; // Do NOT recurse into SVG children
+  }
+
+  // ── Image ────────────────────────────────────────────────────────────────────
+  if (tag === 'img') {
+    let imageData = null;
+    if (el.src) imageData = await getImageBytes(el.src).catch(() => null);
+    layers.push({
+      type: 'IMAGE',
+      name: el.alt ? `img: ${el.alt}` : 'img',
+      imageData,
+      src: el.src,
+      objectFit: cs.objectFit || 'fill',
+      x: rect.left,   y: rect.top,
+      width: rect.width, height: rect.height,
+      borderTopLeftRadius:     parseFloat(cs.borderTopLeftRadius)     || 0,
+      borderTopRightRadius:    parseFloat(cs.borderTopRightRadius)    || 0,
+      borderBottomLeftRadius:  parseFloat(cs.borderBottomLeftRadius)  || 0,
+      borderBottomRightRadius: parseFloat(cs.borderBottomRightRadius) || 0,
+      opacity: parseFloat(cs.opacity),
+      zIndex: cs.zIndex, order: layerOrder++,
+    });
+    return; // Images have no meaningful children
+  }
+
+  // ── Background rect ──────────────────────────────────────────────────────────
+  const bgImg    = cs.backgroundImage;
+  const hasBg    = resolveColor(cs.backgroundColor) !== null;
+  const hasGrad  = bgImg && bgImg !== 'none' && (bgImg.includes('gradient') || bgImg.includes('url('));
+  const hasBorder= parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderRightWidth) > 0 ||
+                   parseFloat(cs.borderBottomWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0;
+  const hasShadow= cs.boxShadow && cs.boxShadow !== 'none';
+  const hasRadius= parseFloat(cs.borderTopLeftRadius) > 0 || parseFloat(cs.borderTopRightRadius) > 0 ||
+                   parseFloat(cs.borderBottomLeftRadius) > 0 || parseFloat(cs.borderBottomRightRadius) > 0;
+
+  if (hasBg || hasGrad || hasBorder || hasShadow || hasRadius) {
+    let gradient = null;
+    // bg-image: handle gradient or url()
+    if (bgImg && bgImg !== 'none') {
+      if (bgImg.includes('gradient')) {
+        gradient = bgImg;
+      } else if (bgImg.startsWith('url(')) {
+        // Rasterise CSS background image
+        const urlMatch = bgImg.match(/url\(["']?([^"')]+)["']?\)/);
+        if (urlMatch) {
+          const imgData = await getImageBytes(urlMatch[1]).catch(() => null);
+          if (imgData) {
+            layers.push({
+              type: 'IMAGE',
+              name: `${tag}-bg-image`,
+              imageData: imgData,
+              objectFit: cs.backgroundSize === 'cover' ? 'cover' : 'contain',
+              x: rect.left, y: rect.top, width: rect.width, height: rect.height,
+              borderTopLeftRadius:     parseFloat(cs.borderTopLeftRadius)     || 0,
+              borderTopRightRadius:    parseFloat(cs.borderTopRightRadius)    || 0,
+              borderBottomLeftRadius:  parseFloat(cs.borderBottomLeftRadius)  || 0,
+              borderBottomRightRadius: parseFloat(cs.borderBottomRightRadius) || 0,
+              opacity: parseFloat(cs.opacity),
+              zIndex: cs.zIndex, order: layerOrder++,
+            });
+          }
+        }
+      }
+    }
+
+    layers.push({
+      type: 'RECT',
+      name: el.id ? `${tag}#${el.id}` : tag,
+      x: rect.left, y: rect.top, width: rect.width, height: rect.height,
+      bgColor:  gradient ? null : cs.backgroundColor,
+      gradient,
+      borderTopColor:    cs.borderTopColor,
+      borderRightColor:  cs.borderRightColor,
+      borderBottomColor: cs.borderBottomColor,
+      borderLeftColor:   cs.borderLeftColor,
+      borderTopWidth:    parseFloat(cs.borderTopWidth)    || 0,
+      borderRightWidth:  parseFloat(cs.borderRightWidth)  || 0,
+      borderBottomWidth: parseFloat(cs.borderBottomWidth) || 0,
+      borderLeftWidth:   parseFloat(cs.borderLeftWidth)   || 0,
+      borderTopStyle:    cs.borderTopStyle,
+      borderRightStyle:  cs.borderRightStyle,
+      borderBottomStyle: cs.borderBottomStyle,
+      borderLeftStyle:   cs.borderLeftStyle,
+      borderTopLeftRadius:     parseFloat(cs.borderTopLeftRadius)     || 0,
+      borderTopRightRadius:    parseFloat(cs.borderTopRightRadius)    || 0,
+      borderBottomLeftRadius:  parseFloat(cs.borderBottomLeftRadius)  || 0,
+      borderBottomRightRadius: parseFloat(cs.borderBottomRightRadius) || 0,
+      boxShadow: cs.boxShadow,
+      opacity: parseFloat(cs.opacity),
+      zIndex: cs.zIndex, order: layerOrder++,
+    });
+  }
+
+  // ── ::before / ::after pseudo-elements ───────────────────────────────────────
+  for (const pseudo of ['::before', '::after']) {
+    const pcs = win.getComputedStyle(el, pseudo);
+    if (!pcs.content || pcs.content === 'none' || pcs.content === '""' || pcs.content === "''") continue;
+
+    const pBg = resolveColor(pcs.backgroundColor);
+    const pBorder = parseFloat(pcs.borderWidth) || 0;
+    const pText = pcs.content.replace(/^["']|["']$/g, '');
+    const isTextContent = pText && pText !== 'none' && pText !== '""';
+
+    if (pBg || pBorder > 0) {
+      const pw = parseFloat(pcs.width)  || 0;
+      const ph = parseFloat(pcs.height) || 0;
+      if (pw > 0.5 && ph > 0.5) {
+        layers.push({
+          type: 'RECT',
+          name: `${tag}${pseudo}`,
+          x: rect.left, y: rect.top,
+          width: pw, height: ph,
+          bgColor: pcs.backgroundColor,
+          borderTopLeftRadius:     parseFloat(pcs.borderTopLeftRadius)     || 0,
+          borderTopRightRadius:    parseFloat(pcs.borderTopRightRadius)    || 0,
+          borderBottomLeftRadius:  parseFloat(pcs.borderBottomLeftRadius)  || 0,
+          borderBottomRightRadius: parseFloat(pcs.borderBottomRightRadius) || 0,
+          boxShadow: pcs.boxShadow,
+          opacity: parseFloat(pcs.opacity),
+          zIndex: cs.zIndex, order: layerOrder++,
+        });
+      }
+    }
+
+    // Pseudo-element text content (e.g. counters, decorative text)
+    if (isTextContent && pText !== 'counter(list-item)') {
+      layers.push({
+        type: 'TEXT',
+        name: `${tag}${pseudo} text`,
+        text: pText,
+        x: rect.left, y: rect.top,
+        width: rect.width, height: parseFloat(pcs.fontSize) * 1.5,
+        color: pcs.color, fontSize: parseFloat(pcs.fontSize) || 14,
+        fontFamily: pcs.fontFamily, fontWeight: pcs.fontWeight, fontStyle: pcs.fontStyle,
+        textAlign: pcs.textAlign || 'left',
+        opacity: parseFloat(pcs.opacity),
+        zIndex: cs.zIndex, order: layerOrder++,
+      });
+    }
+  }
+
+  // ── Direct text nodes — use Range API for pixel-accurate position ────────────
+  const paddingTop    = parseFloat(cs.paddingTop)    || 0;
+  const paddingLeft   = parseFloat(cs.paddingLeft)   || 0;
+  const paddingRight  = parseFloat(cs.paddingRight)  || 0;
+  const paddingBottom = parseFloat(cs.paddingBottom) || 0;
+
+  for (const child of el.childNodes) {
+    if (child.nodeType !== Node.TEXT_NODE) continue;
+    const rawText = child.textContent.trim();
+    if (!rawText) continue;
+
+    // Use Range to get the actual rendered bounding box of the text
+    let tx = rect.left + paddingLeft;
+    let ty = rect.top  + paddingTop;
+    let tw = Math.max(1, rect.width  - paddingLeft - paddingRight);
+    let th = Math.max(1, rect.height - paddingTop  - paddingBottom);
+
+    try {
+      const range = document.createRange();
+      range.selectNode(child);
+      const tr = range.getBoundingClientRect();
+      if (tr.width > 0.5 && tr.height > 0.5) {
+        tx = tr.left;
+        ty = tr.top;
+        tw = tr.width;
+        th = tr.height;
+      }
+    } catch (_) {}
+
+    // Clamp inside the iframe viewport (sanity check)
+    if (tx < -200 || ty < -200) continue;
+
+    layers.push({
+      type: 'TEXT',
+      name: `${tag} text`,
+      text: rawText,
+      x: tx, y: ty, width: tw, height: th,
+      color: cs.color,
+      fontSize: parseFloat(cs.fontSize) || 14,
+      fontFamily: cs.fontFamily,
+      fontWeight: cs.fontWeight,
+      fontStyle:  cs.fontStyle,
+      textAlign:  cs.textAlign   || 'left',
+      letterSpacing: cs.letterSpacing,
+      lineHeight: cs.lineHeight,
+      textTransform: cs.textTransform,
+      textDecoration: cs.textDecoration,
+      textShadow: cs.textShadow,
+      opacity: parseFloat(cs.opacity),
+      zIndex: cs.zIndex, order: layerOrder++,
+    });
+  }
+
+  // ── Recurse into children ────────────────────────────────────────────────────
+  for (const child of el.children) {
+    await walkAndCapture(child, win, layers);
+  }
+}
+</script>
+</body>
+</html>
